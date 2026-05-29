@@ -82,12 +82,29 @@ ComfyUI node covering several: `MrForExample/ComfyUI-3D-Pack`.
 ---
 
 ## Stage 5 — Rig + animation
+**Pick by priority — there's a real trade-off (verified):**
+- **Best rig + commercial + creatures → SkinTokens.** But its skeleton is **learned/unnamed**, so the
+  animation step needs *positional* retargeting (harder).
+- **Easiest animation → MIA.** Outputs a **mixamorig (named)** skeleton (drop-in for `bake_anim.py --direct`),
+  but weights are **CC-BY-NC** (non-commercial only).
+
+**SkinTokens** (VAST-AI, MIT, arXiv 2602.04805, Feb 2026): successor to UniRig; rigs **humanoids +
+creatures**; **GLB in → rigged GLB out** in one shot; +98–133% skin / +17–22% bone vs prior SOTA.
+Needs **≥14 GB VRAM** (fits 16GB only with display/other models NOT resident — run headless).
+Python ≥3.11, CUDA ≥12.1, torch cu128.
+```bash
+git clone https://github.com/VAST-AI-Research/SkinTokens && cd SkinTokens
+python download.py --model        # pulls VAST-AI/SkinTokens (2 ckpts: articulation_xl_* + skin_vae_*)
+python demo.py --input mesh.glb --output rigged.glb
+```
+
 | What | Repo | Note |
 |---|---|---|
-| Node | `PozzettiAndrea/ComfyUI-UniRig` | bundles Blender + UniRig + MIA |
-| UniRig weights | `apozz/UniRig-safetensors` (skeleton 1.4 GB + skin 4.1 GB) | MIT; general/non-humanoid |
-| MIA weights | `jasongzy/Make-It-Animatable` (Apache-2.0) | **humanoid path — outputs Mixamo-compatible 65-bone skeleton** |
-| Creature rigging | `Isabella98Liu/RigAnything` | template-free; check its (restrictive) license |
+| **SkinTokens (best rig)** | `github.com/VAST-AI-Research/SkinTokens` · HF `VAST-AI/SkinTokens` | MIT; humanoid + creature; rig+skin → GLB; CLI (no ComfyUI node yet). Skeleton is **predicted/unnamed** → retarget by position, not name. |
+| **MIA (easiest animate)** | `jasongzy/Make-It-Animatable` | **mixamorig named skeleton** → `bake_anim.py --direct`; weights **CC-BY-NC** (non-commercial) |
+| UniRig (fallback) | `github.com/VAST-AI-Research/UniRig` · weights `apozz/UniRig-safetensors` | MIT; skeleton + skin; FBX out → convert |
+| ComfyUI node (UniRig/MIA) | `PozzettiAndrea/ComfyUI-UniRig` | bundles Blender + UniRig + MIA |
+| Creature-only fallback | `Isabella98Liu/RigAnything` | template-free; restrictive license (SkinTokens covers creatures, so usually unneeded) |
 | Bake named clips (free, GUI) | [mesh2motion.org](https://mesh2motion.org) (`Mesh2Motion/mesh2motion-app`, MIT) | human + animal skeletons, exports multi-clip GLB |
 | Bake named clips (browser) | Mixamo (free, Adobe ID) → FBX | then convert ↓ |
 | FBX → GLB | `godotengine/FBX2glTF` (linux-x64) | `FBX2glTF --binary --anim-framerate bake30 -i c.fbx -o c.glb` |

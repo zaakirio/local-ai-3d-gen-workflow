@@ -3,12 +3,16 @@ bake_anim.py — headless Blender: bind a named animation clip onto an MIA-rigge
 and export a GLB with the baked clip. Closes the local rigging+animation gap (no cloud,
 no Mixamo/Adobe account).
 
+RIGGER NOTE (verified): MIA outputs a MIXAMORIG (named) skeleton -> --direct works if the clip is
+also mixamorig. SkinTokens / UniRig output a PREDICTED / unnamed skeleton -> --direct will NOT work;
+you must retarget by position (Rokoko, or fill BONE_MAP after inspecting the actual predicted bone
+names in the rigged GLB). Inspect with: print([b.name for b in armature.pose.bones]).
+
 Two modes:
-  --direct      clip already uses the same mixamorig bone names + T-pose rest pose as the
-                rig (fastest, no retarget). Use this if you ever have mixamorig-native clips.
-  (default)     retarget: maps clip bones -> mixamorig via BONE_MAP, aligns rest pose with
-                copy-rotation constraints, then nla.bake into a clean named Action. Use this
-                for CC0 clips (CMU / Mesh2Motion / RancidMilk) whose bones are NOT mixamorig.
+  --direct      clip AND rig share the same (mixamorig) bone names + T-pose rest pose. MIA-rig only.
+  (default)     retarget: maps clip bones -> rig bones via BONE_MAP, aligns rest pose with
+                copy-rotation constraints, then nla.bake into a clean named Action. Use for CC0
+                clips (CMU / Mesh2Motion / RancidMilk) and for SkinTokens/UniRig rigs.
 
 Usage:
   blender --background --python scripts/bake_anim.py -- \

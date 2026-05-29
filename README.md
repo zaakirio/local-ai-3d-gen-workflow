@@ -20,7 +20,7 @@ local **ComfyUI**. The Three.js front-end and `gltf-transform` compression are u
 | Companion edit | gpt-image-2/edit | **Qwen-Image-Edit-2509 GGUF** |
 | Background removal | bria | **BiRefNet** (MIT) |
 | Image → 3D mesh + texture | meshy/v6 | **Hunyuan3D 2.1** (`Hunyuan3D-2GP` low-VRAM fork) |
-| Rig + baked animation | meshy/v6 | **UniRig / MIA** → Blender headless retarget + bake ([`bake_anim.py`](scripts/bake_anim.py)) |
+| Rig + baked animation | meshy/v6 | **SkinTokens** (MIT, rig+skin→GLB) → Blender headless retarget + bake ([`bake_anim.py`](scripts/bake_anim.py)) |
 | Floor PBR | patina | **CHORD** (research) / **QFX-PBRGenerator** (commercial) |
 | Background video loop | seedance-2.0 | **Wan 2.2 I2V GGUF** + Lightning LoRA |
 | Compression | gltf-transform | **gltf-transform** — unchanged |
@@ -43,6 +43,7 @@ python scripts/orchestrate.py --char-id neon01 --prompt "cyberpunk operative, fu
 - **[docs/01-setup-arch.md](docs/01-setup-arch.md)** — Arch + Blackwell sm_120 toolchain (the long, one-time part)
 - **[docs/02-downloads.md](docs/02-downloads.md)** — every model: repo, file, target folder, license
 - **[docs/03-pipeline.md](docs/03-pipeline.md)** — stage-by-stage flow, the rigging recipe, risk table
+- **[docs/04-os-choice.md](docs/04-os-choice.md)** — Arch vs Windows vs WSL2 (verified: Linux wins for the 3D leg)
 - **[comfyui-workflows/README.md](comfyui-workflows/README.md)** — how to export the per-stage workflow JSONs
 
 ## Honest caveats
@@ -50,6 +51,6 @@ python scripts/orchestrate.py --char-id neon01 --prompt "cyberpunk operative, fu
   scripted, but validate your first character visually before batching. Details in docs/03.
 - **No concurrency:** one GPU = serial. ~10–20 min/character, ~2–3 h for a 10-character roster
   (cloud was ~1 min / ~$1.20 each). Local wins on cost-at-scale, privacy, and free iteration.
-- **Licensing for redistribution:** some defaults are non-commercial (FLUX.2-9B, CHORD, RMBG-2.0,
-  MIA weights). Commercial-safe swaps are noted per stage (Z-Image, QFX, BiRefNet, UniRig).
+- **Licensing for redistribution:** some defaults are non-commercial (FLUX.2-9B, CHORD, RMBG-2.0).
+  Commercial-safe swaps are noted per stage (Z-Image, QFX, BiRefNet; SkinTokens rigging is MIT).
   Each model keeps its own license; this repo's own code is MIT.

@@ -36,8 +36,14 @@ steps — no cloud, no GUI, no Mixamo/Adobe account:
 1. **Retopo first.** Hunyuan3D/TRELLIS output is dense triangle soup; skin weights go noisy on it.
    `blender --background --python scripts/retopo.py -- in.glb out.glb` (decimate ~24k tris, or
    Quad Remesher / Instant Meshes for clean quads).
-2. **Rig** via ComfyUI-UniRig → **MIA** predicts blend weights + a **standard 65-bone mixamorig
-   skeleton** in ~1s. (Commercial: use **UniRig**, MIT — MIA's released weights are CC-BY-NC.)
+2. **Rig** — choose by priority (verified trade-off):
+   - **SkinTokens** (VAST-AI, MIT): best rig quality, handles **creatures**, `demo.py mesh.glb → rigged.glb`,
+     ≥14 GB (run headless). **But its skeleton is learned/unnamed**, so step 3 must retarget by
+     *position/hierarchy* (Rokoko, or a hand-built map after inspecting the output bones) — **`--direct` won't work.**
+   - **MIA** (via ComfyUI-UniRig): outputs a **mixamorig** named skeleton → step 3 is trivial
+     (`bake_anim.py --direct`). Downside: weights are **CC-BY-NC** (non-commercial).
+   - **UniRig** (MIT) is the middle fallback.
+   - Rule of thumb: **commercial / creatures → SkinTokens; easiest humanoid animation → MIA.**
 3. **Bake a named clip** headlessly:
    `blender --background --python scripts/bake_anim.py -- --rig rigged.glb --clip anims/idle.fbx --name idle --out idle.glb`
    - If the clip is mixamorig-native (same bone names + T-pose): `--direct` = no retarget, just assign the Action.
@@ -53,9 +59,10 @@ steps — no cloud, no GUI, no Mixamo/Adobe account:
 | Mixamo | ❌ | clips are mixamorig-native but **cannot be redistributed** — do not bundle |
 
 ### Non-humanoid companions
-- **UniRig** (bundled, MIT) or **RigAnything** — template-free, handle creatures. Rigging only.
+- **SkinTokens** rigs creatures too — same tool as the characters, no separate rigger needed.
+  (Fallbacks: UniRig, or RigAnything for template-free.)
 - Animate via Mesh2Motion's **animal** skeletons + `bake_anim.py`, or hand-key in Blender.
-- Expect the most fixing here: missing tail/wing/ear bones, joint weight artifacts.
+- Still expect the most fixing here: missing tail/wing/ear bones, joint weight artifacts.
 
 ### Honest weak link
 Rig + bake are both headless and scriptable. The fragile part is **rest-pose / bone-roll alignment**
