@@ -27,32 +27,42 @@ the *swap*, not steady state, so serialize hard.
 
 ---
 
-## The rigging workaround (the only real gap)
+## The rigging workaround (fully local, fully headless)
 
-Meshy's single call = rig + skin + named animation baked into one GLB. Locally, split it:
+Meshy's single call = rig + skin + named animation baked into one GLB. Locally it's three headless
+steps — no cloud, no GUI, no Mixamo/Adobe account:
 
-### Humanoid characters (best path)
+### Humanoid characters
 1. **Retopo first.** Hunyuan3D/TRELLIS output is dense triangle soup; skin weights go noisy on it.
-   Headless Blender: `blender --background --python scripts/retopo.py -- in.glb out.glb`
-   (decimate to ~15–30k tris, or Quad Remesher / Instant Meshes for clean quads).
-2. **MIA (Make-It-Animatable)** via ComfyUI-UniRig → predicts blend weights + a **standard 65-bone
-   mixamorig skeleton** in ~1s. Because it's Mixamo-compatible, any Mixamo clip retargets onto it.
-3. **Bake a named clip**, two options:
-   - *Fully local:* apply a CC0 clip in **Mesh2Motion** (GUI: fit skeleton, pick idle/dance/alert,
-     export multi-clip GLB), or a Blender headless script that loads a mixamorig `.fbx` clip and
-     exports glTF with `export_animations=True`.
-   - *Browser:* upload to **Mixamo**, pick clips, download FBX, then `FBX2glTF --binary --anim-framerate bake30`.
+   `blender --background --python scripts/retopo.py -- in.glb out.glb` (decimate ~24k tris, or
+   Quad Remesher / Instant Meshes for clean quads).
+2. **Rig** via ComfyUI-UniRig → **MIA** predicts blend weights + a **standard 65-bone mixamorig
+   skeleton** in ~1s. (Commercial: use **UniRig**, MIT — MIA's released weights are CC-BY-NC.)
+3. **Bake a named clip** headlessly:
+   `blender --background --python scripts/bake_anim.py -- --rig rigged.glb --clip anims/idle.fbx --name idle --out idle.glb`
+   - If the clip is mixamorig-native (same bone names + T-pose): `--direct` = no retarget, just assign the Action.
+   - Otherwise (CC0 clips below): the script maps bones, aligns rest pose via copy-rotation
+     constraints, `nla.bake`s a clean named Action, and exports the GLB.
 
-### Non-humanoid companions (harder)
-- **UniRig** (bundled, MIT) or **RigAnything** — both template-free, handle creatures. Rigging only.
-- Animate via Mesh2Motion's **animal** skeletons, or hand-key in Blender.
-- Expect the most manual fixing here: missing tail/wing/ear bones, joint weight artifacts.
+### Where the animation clips come from (OSS-redistributable)
+| Source | License | Note |
+|---|---|---|
+| [RancidMilk free anims](https://rancidmilk.itch.io/free-character-animations) | CC0-ish (free, modify, redistribute) | 2,500+ CMU motions retargeted onto a CC0 rig, FBX — best bundle |
+| [Mesh2Motion assets](https://github.com/Mesh2Motion/mesh2motion-assets) | CC0-1.0 | extractable `.blend`; own skeleton (needs BONE_MAP) |
+| [CMU Mocap](https://mocap.cs.cmu.edu/) | public domain | BVH; most variety; needs retarget + cleanup |
+| Mixamo | ❌ | clips are mixamorig-native but **cannot be redistributed** — do not bundle |
 
-### Honest gap summary
-- Rigging itself = automatable + headless. **Animation baking is the weak link** — every route has
-  a GUI step or a hand-written Blender export script. There is no turnkey "mesh in → multi-clip GLB out".
-- Budget **a manual cleanup pass per character**. Fine for a fixed roster; painful for a live
-  CREATE-YOUR-OWN feature (which assumed ~1-min cloud calls).
+### Non-humanoid companions
+- **UniRig** (bundled, MIT) or **RigAnything** — template-free, handle creatures. Rigging only.
+- Animate via Mesh2Motion's **animal** skeletons + `bake_anim.py`, or hand-key in Blender.
+- Expect the most fixing here: missing tail/wing/ear bones, joint weight artifacts.
+
+### Honest weak link
+Rig + bake are both headless and scriptable. The fragile part is **rest-pose / bone-roll alignment**
+during retarget: CC0 clips aren't mixamorig-native, so import them **without "Automatic Bone
+Orientation"** and **validate the first character visually** before batching. Once a clip source is
+dialed in, the rest of the roster is mechanical. Fine for a fixed roster; the per-character validation
+makes a live CREATE-YOUR-OWN feature impractical (it assumed ~1-min cloud calls).
 
 ---
 
@@ -62,8 +72,11 @@ Before building all 8 stages, validate the two genuine unknowns end-to-end:
 txt2img (Z-Image) -> Hunyuan3D 2.1 (2GP) -> retopo -> MIA rig -> bake one idle clip -> gltf-transform
 ```
 If the sm_120 kernels compile and one rigged+animated GLB lands in Three.js looking right, the rest
-of the stages are comparatively low-risk. If rigging quality disappoints, that's your signal to keep
-**cloud Meshy for stage 6 only** and run everything else local (the recommended hybrid).
+of the stages are comparatively low-risk — the full pipeline reproduces locally.
+
+> **Optional fallback (not required):** if you don't want to tune the rigging retarget at all, you can
+> keep just the rig+animation stage on cloud Meshy and run everything else local. The goal here,
+> though, is full local reproduction — and it works.
 
 ---
 
@@ -72,7 +85,7 @@ of the stages are comparatively low-risk. If rigging quality disappoints, that's
 | Risk | Impact | Mitigation |
 |---|---|---|
 | **sm_120 kernel compile** (Hunyuan/3D-Pack) | Highest setup risk; ~a day | `TORCH_CUDA_ARCH_LIST=12.0`, build from source, older gcc via `CUDAHOSTCXX`. See `docs/01`. |
-| **Rigging not 1:1 with Meshy** | Manual pass per character; no named-clip library | MIA→Mixamo for humanoids; consider hybrid (cloud Meshy) at volume |
+| **Rigging retarget alignment** | Rest-pose/bone-roll mismatch twists CC0 clips | Import clips w/o auto-bone-orientation; `bake_anim.py` BONE_MAP; validate char #1 visually |
 | **Hunyuan3D paint > 16GB stock** | Texture pass OOMs | Use `Hunyuan3D-2GP` fork / `low_vram_mode` / lower `max_num_view` |
 | **TRELLIS.2 needs 24GB** | Won't run cleanly on 16GB | Use Hunyuan3D 2.1; treat TRELLIS.2 as offload-only experiment |
 | **No concurrency** | 10 chars ≈ 2–3 h serial | Queue overnight; this is the inherent single-GPU cost |

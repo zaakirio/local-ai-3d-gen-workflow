@@ -125,10 +125,12 @@ def main():
     for name, wf in STAGES:
         run_stage(name, wf, ctx)
 
-    print("\nComfyUI stages done. Remaining manual/CLI steps (see docs/03-pipeline.md):")
-    print("  5. retopo   : blender --background --python scripts/retopo.py -- in.glb out.glb")
-    print("  6. rig+anim : ComfyUI-UniRig (MIA) -> bake clip (Mesh2Motion / Blender / Mixamo) -> GLB")
-    print("  9. compress : gltf-transform resize 1024 -> webp q80 -> draco")
+    print("\nComfyUI stages done. Remaining headless CLI steps (see docs/03-pipeline.md):")
+    print("  retopo  : blender --background --python scripts/retopo.py -- mesh.glb mesh_lo.glb")
+    print("  rig     : ComfyUI-UniRig (MIA) -> rigged.glb")
+    print("  animate : blender --background --python scripts/bake_anim.py -- \\")
+    print("              --rig rigged.glb --clip assets/anims/idle.fbx --name idle --out final.glb")
+    print("  compress: gltf-transform resize 1024 -> webp q80 -> draco")
 
 
 if __name__ == "__main__":
