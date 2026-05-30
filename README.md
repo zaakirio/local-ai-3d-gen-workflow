@@ -1,6 +1,6 @@
 # local-ai-3d-gen
 
-A **fully local, open-weight** reproduction of the [fal-regenerate-3d](https://fal-roster.vercel.app)
+A **fully local, open-weight** reproduction of the [fal-regenerate-3d](https://github.com/fal-ai-community/skills/blob/9ca850412943251fc9a466c4c29fdaf7a303a3d8/skills/fal-regenerate-3d/SKILL.md#L4)
 pipeline — the cloud recipe that generates rigged 3D characters, companion creatures, PBR floors and
 looped video backgrounds for an interactive Three.js character selector.
 
